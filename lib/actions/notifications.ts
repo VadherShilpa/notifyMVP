@@ -15,6 +15,7 @@ const sendSchema = z.object({
   target:         z.string().min(1).default('all'),
   url:            z.string().url('Action Link must be a valid URL').optional().or(z.literal('')),
   imageUrl:       z.string().url('Image URL must be a valid URL').optional().or(z.literal('')),
+  iconUrl:        z.string().url('Icon URL must be a valid URL').optional().or(z.literal('')),
   externalUserId: z.string().optional(),
 })
 
@@ -117,6 +118,7 @@ export async function sendNotification(_prev: unknown, formData: FormData) {
     target:         (formData.get('target') as string) || 'all',
     url:            (formData.get('url') as string) || undefined,
     imageUrl:       (formData.get('imageUrl') as string) || undefined,
+    iconUrl:        (formData.get('iconUrl') as string) || undefined,
     externalUserId: (formData.get('externalUserId') as string) || undefined,
   }
 
@@ -180,6 +182,7 @@ export async function sendNotification(_prev: unknown, formData: FormData) {
         {
           url: parsed.data.url,
           imageUrl: parsed.data.imageUrl,
+          iconUrl: parsed.data.iconUrl,
         }
       )
 
@@ -196,6 +199,7 @@ export async function sendNotification(_prev: unknown, formData: FormData) {
       {
         url: parsed.data.url,
         imageUrl: parsed.data.imageUrl,
+        iconUrl: parsed.data.iconUrl,
       }
     )
 

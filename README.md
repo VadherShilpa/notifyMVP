@@ -119,18 +119,85 @@ Auth: `Authorization: Bearer <apiKey>` (or `x-api-key`).
 
 | Goal | Method | Path |
 |---|---|---|
-| Send (all / OS / user) | `POST` | `/api/v1/notifications` |
+| Send (all / OS / user / topic) | `POST` | `/api/v1/notifications` |
 | List devices | `GET` | `/api/v1/devices` |
 | List topics | `GET` | `/api/v1/topics` |
 | Stats (total count) | `GET` | `/api/v1/stats` |
 
-**Send to one user:** `"include_external_user_ids": ["USER_ID"]` or `"target": "user:USER_ID"` (SDK must have linked the id).
+### Send notification body
 
-**Devices filters:** `platform`, `status`, `externalUserId`, `country`, `language`, `appVersion`, `limit`, `offset`. FCM tokens are masked.
+| Field | Required | Notes |
+|---|---|---|
+| `title`, `body` | yes | Notification text |
+| `target` | no* | `"all"` \| `"android"` \| `"ios"` \| `"topic:NAME"` \| `"segment:ID"` \| `"user:USER_ID"` |
+| `include_topics` / `topics` | no* | `["promo_offers"]` — same as `"target": "topic:promo_offers"` (Rich Push OK) |
+| `include_external_user_ids` | no* | `["USER_ID"]` — send to one/many users (SDK must have linked the id) |
+| `url` | no | Click / deep link |
+| `imageUrl` or `image` | no | **Rich Push** Big Picture — public HTTPS URL |
+| `iconUrl` or `largeIcon` | no | Circular large icon — public HTTPS URL |
+| `data` | no | Extra key/values passed to the app |
+
+\* Use either `target` **or** `include_external_user_ids`.
+
+**Send to one user:** `"include_external_user_ids": ["USER_ID"]` or `"target": "user:USER_ID"`.
+
+**Send to a topic (with Rich Push):**
+
+1. `GET /api/v1/topics` → use `topics[].name`
+2. `POST /api/v1/notifications` with topic target **and** `imageUrl`
+
+```bash
+# List topics
+curl "https://YOUR-WORKER/api/v1/topics" \
+  -H "Authorization: Bearer YOUR_API_KEY"
+
+# Rich Push to topic — Option A: target prefix
+curl -X POST "https://YOUR-WORKER/api/v1/notifications" \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "Flash sale",
+    "body": "For promo subscribers",
+    "target": "topic:promo_offers",
+    "imageUrl": "https://cdn.example.com/banner.jpg",
+    "iconUrl": "https://cdn.example.com/icon.png"
+  }'
+
+# Rich Push to topic — Option B: include_topics alias
+curl -X POST "https://YOUR-WORKER/api/v1/notifications" \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "Flash sale",
+    "body": "For promo subscribers",
+    "include_topics": ["promo_offers"],
+    "imageUrl": "https://cdn.example.com/banner.jpg"
+  }'
+```
+
+Shortcuts (same as system topics): `"target": "all"` · `"android"` · `"ios"` — no need to invent the full `all_<appId>` name yourself. Rich Push (`imageUrl`) works on these too.
+
+**Rich Push example (user):**
+
+```bash
+curl -X POST "https://YOUR-WORKER/api/v1/notifications" \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "Flash sale",
+    "body": "50% off ends tonight",
+    "include_external_user_ids": ["USER_ID"],
+    "imageUrl": "https://cdn.example.com/banner.jpg",
+    "iconUrl": "https://cdn.example.com/icon.png",
+    "url": "https://example.com/sale"
+  }'
+```
+
+**Devices filters:** `platform`, `status`, `externalUserId`, `country`, `language`, `appVersion`, `limit`, `page` (20 per page). FCM tokens are masked.
 
 **Topics filters:** `type=system|custom`, `active=true|false|all`.
 
-Copy-paste examples: dashboard → **API Keys & Docs**.
+Copy-paste examples: dashboard → **API Keys & Docs** → **Devices & Topics** tab (list + send helpers).
 
 ---
 

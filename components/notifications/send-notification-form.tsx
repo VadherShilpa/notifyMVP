@@ -1,7 +1,7 @@
 'use client'
 
 import { useActionState, useEffect, useState } from 'react'
-import { Loader2, Send } from 'lucide-react'
+import { ImageIcon, Loader2, Send } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -35,6 +35,11 @@ export function SendNotificationForm({ projects, topics = [], segments = [] }: S
   const router = useRouter()
   const [target, setTarget] = useState('all')
   const [formNonce, setFormNonce] = useState(0)
+  const [titlePreview, setTitlePreview] = useState('')
+  const [bodyPreview, setBodyPreview] = useState('')
+  const [imageUrl, setImageUrl] = useState('')
+  const [iconUrl, setIconUrl] = useState('')
+  const [imageBroken, setImageBroken] = useState(false)
 
   const [state, action, isPending] = useActionState(
     async (prev: unknown, formData: FormData) => {
@@ -53,6 +58,11 @@ export function SendNotificationForm({ projects, topics = [], segments = [] }: S
           : 'Notification sent'
       )
       setTarget('all')
+      setTitlePreview('')
+      setBodyPreview('')
+      setImageUrl('')
+      setIconUrl('')
+      setImageBroken(false)
       setFormNonce((n) => n + 1)
       router.refresh()
     }
@@ -81,6 +91,7 @@ export function SendNotificationForm({ projects, topics = [], segments = [] }: S
   }))
 
   const allTargets = [...PLATFORM_TARGETS, ...segmentTargets, ...topicTargets]
+  const isRich = Boolean(imageUrl.trim())
 
   return (
     <Card>
@@ -138,13 +149,30 @@ export function SendNotificationForm({ projects, topics = [], segments = [] }: S
           {/* Title */}
           <div className="space-y-1.5">
             <Label htmlFor="title">Title</Label>
-            <Input id="title" name="title" placeholder="Notification title" required maxLength={100} />
+            <Input
+              id="title"
+              name="title"
+              placeholder="Notification title"
+              required
+              maxLength={100}
+              value={titlePreview}
+              onChange={(e) => setTitlePreview(e.target.value)}
+            />
           </div>
 
           {/* Body */}
           <div className="space-y-1.5">
             <Label htmlFor="body">Message</Label>
-            <Textarea id="body" name="body" placeholder="Notification message body" required maxLength={500} rows={3} />
+            <Textarea
+              id="body"
+              name="body"
+              placeholder="Notification message body"
+              required
+              maxLength={500}
+              rows={3}
+              value={bodyPreview}
+              onChange={(e) => setBodyPreview(e.target.value)}
+            />
           </div>
 
           {/* Launch URL / Action Link */}
@@ -161,15 +189,98 @@ export function SendNotificationForm({ projects, topics = [], segments = [] }: S
             </p>
           </div>
 
-          {/* Image URL */}
-          <div className="space-y-1.5">
-            <Label htmlFor="imageUrl">Image URL (Optional)</Label>
-            <Input
-              id="imageUrl"
-              name="imageUrl"
-              type="url"
-              placeholder="e.g. https://example.com/banner.jpg"
-            />
+          {/* Rich Push */}
+          <div className="space-y-3 rounded-lg border border-[var(--border)] bg-[var(--muted)]/30 p-4">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <ImageIcon className="h-4 w-4 text-[var(--primary)]" />
+                <Label className="text-sm font-medium">Rich Push</Label>
+              </div>
+              {isRich && (
+                <span className="rounded-full bg-[var(--primary)]/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--primary)]">
+                  Big Picture
+                </span>
+              )}
+            </div>
+            <p className="text-xs text-[var(--muted-foreground)]">
+              Public HTTPS image URL. Works with <strong>all</strong>, <strong>OS</strong>, <strong>topic</strong>, and <strong>user</strong> targets — Big Picture on Android, rich media on iOS / web.
+            </p>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="imageUrl">Image URL</Label>
+              <Input
+                id="imageUrl"
+                name="imageUrl"
+                type="url"
+                placeholder="https://cdn.example.com/banner.jpg"
+                value={imageUrl}
+                onChange={(e) => {
+                  setImageUrl(e.target.value)
+                  setImageBroken(false)
+                }}
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="iconUrl">Large Icon URL (Optional)</Label>
+              <Input
+                id="iconUrl"
+                name="iconUrl"
+                type="url"
+                placeholder="https://cdn.example.com/icon.png"
+                value={iconUrl}
+                onChange={(e) => setIconUrl(e.target.value)}
+              />
+              <p className="text-xs text-[var(--muted-foreground)]">
+                Circular large icon next to the title (Android / web). Prefer a square PNG.
+              </p>
+            </div>
+
+            {/* Live preview */}
+            <div className="overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--background)] shadow-sm">
+              <div className="border-b border-[var(--border)] px-3 py-1.5 text-[10px] font-medium uppercase tracking-wide text-[var(--muted-foreground)]">
+                Preview
+              </div>
+              <div className="flex gap-3 p-3">
+                {iconUrl.trim() ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={iconUrl}
+                    alt=""
+                    className="h-10 w-10 shrink-0 rounded-full object-cover bg-[var(--muted)]"
+                    onError={(e) => {
+                      ;(e.target as HTMLImageElement).style.display = 'none'
+                    }}
+                  />
+                ) : (
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--primary)]/15 text-xs font-bold text-[var(--primary)]">
+                    N
+                  </div>
+                )}
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-semibold leading-tight">
+                    {titlePreview.trim() || 'Notification title'}
+                  </p>
+                  <p className="mt-0.5 line-clamp-2 text-xs text-[var(--muted-foreground)]">
+                    {bodyPreview.trim() || 'Your message will appear here'}
+                  </p>
+                </div>
+              </div>
+              {imageUrl.trim() && !imageBroken && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={imageUrl}
+                  alt="Rich push preview"
+                  className="max-h-48 w-full object-cover"
+                  onError={() => setImageBroken(true)}
+                />
+              )}
+              {imageUrl.trim() && imageBroken && (
+                <div className="flex h-24 items-center justify-center bg-[var(--muted)] text-xs text-[var(--muted-foreground)]">
+                  Image could not be loaded — check the URL is public HTTPS
+                </div>
+              )}
+            </div>
           </div>
 
           {state?.error && (

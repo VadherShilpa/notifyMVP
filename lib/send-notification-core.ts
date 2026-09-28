@@ -32,6 +32,7 @@ export interface SendResult {
 export interface SendNotificationOptions {
   url?: string
   imageUrl?: string
+  iconUrl?: string
   data?: Record<string, string>
   saveToDb?: boolean
   tokens?: string[]
@@ -128,6 +129,7 @@ export async function sendNotificationCore(
   const fcmSendOptions = {
     url: options?.url,
     imageUrl: options?.imageUrl,
+    iconUrl: options?.iconUrl,
     data: options?.data,
   }
 

@@ -105,6 +105,17 @@ export async function POST(req: NextRequest) {
       target = target[0] || 'all'
     }
 
+    // Topic aliases (custom dashboard): include_topics / topics / topic
+    // Works with Rich Push — pass imageUrl / iconUrl on the same request.
+    const rawTopics = body.include_topics ?? body.topics ?? body.topic
+    if (rawTopics) {
+      const topicNames = Array.isArray(rawTopics) ? rawTopics : [rawTopics]
+      const name = typeof topicNames[0] === 'string' ? topicNames[0].trim() : ''
+      if (name) {
+        target = name.startsWith('topic:') ? name : `topic:${name}`
+      }
+    }
+
     // Handle user arrays or user target (e.g. include_external_user_ids, userIds, external_user_id, userId)
     const rawUserIds = body.include_external_user_ids ?? body.userIds ?? body.external_user_id ?? body.userId
     if (rawUserIds) {
@@ -138,7 +149,8 @@ export async function POST(req: NextRequest) {
     }
 
     const targetUrl = body.url || body.deepLink || body.clickAction || body.web_url
-    const imageUrl = body.imageUrl || body.image || body.iconUrl || body.icon
+    const imageUrl = body.imageUrl || body.image
+    const iconUrl = body.iconUrl || body.largeIcon || body.icon
     const customData = body.data || {}
 
     // Dispatch notification core
@@ -151,6 +163,7 @@ export async function POST(req: NextRequest) {
       {
         url: targetUrl,
         imageUrl,
+        iconUrl,
         data: typeof customData === 'object' ? customData : {},
         saveToDb,
         tokens,

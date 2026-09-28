@@ -268,13 +268,43 @@ curl -X POST "https://YOUR-WORKER/api/v1/notifications" \
   -H "Content-Type: application/json" \
   -d '{"title":"Hello","body":"Broadcast","target":"all"}'
 
-# One user by External User ID
+# One user by External User ID + Rich Push (Big Picture)
 curl -X POST "https://YOUR-WORKER/api/v1/notifications" \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
-  -d '{"title":"Hello","body":"For you","include_external_user_ids":["USER_ID"]}'
+  -d '{
+    "title":"Hello",
+    "body":"For you",
+    "include_external_user_ids":["USER_ID"],
+    "imageUrl":"https://cdn.example.com/banner.jpg",
+    "iconUrl":"https://cdn.example.com/icon.png",
+    "url":"https://example.com/sale"
+  }'
 
-# List devices (custom dashboard)
+# Send Rich Push to a TOPIC (name from GET /api/v1/topics → topics[].name)
+curl -X POST "https://YOUR-WORKER/api/v1/notifications" \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title":"Flash sale",
+    "body":"For promo subscribers",
+    "target":"topic:promo_offers",
+    "imageUrl":"https://cdn.example.com/banner.jpg",
+    "iconUrl":"https://cdn.example.com/icon.png"
+  }'
+
+# Same with include_topics alias
+curl -X POST "https://YOUR-WORKER/api/v1/notifications" \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title":"Flash sale",
+    "body":"For promo subscribers",
+    "include_topics":["promo_offers"],
+    "imageUrl":"https://cdn.example.com/banner.jpg"
+  }'
+
+# List devices (custom dashboard — 20 per page)
 curl "https://YOUR-WORKER/api/v1/devices?limit=20&page=1" \
   -H "Authorization: Bearer YOUR_API_KEY"
 
@@ -283,7 +313,9 @@ curl "https://YOUR-WORKER/api/v1/topics" \
   -H "Authorization: Bearer YOUR_API_KEY"
 ```
 
-Full snippets: dashboard → **API Keys & Docs**.
+Send body fields: `title`, `body`, `target` / `include_external_user_ids`, optional `url`, **`imageUrl`** (Rich Push), **`iconUrl`**, `data`.
+
+Full snippets: dashboard → **API Keys & Docs** → **Devices & Topics**.
 
 Devices register at:
 

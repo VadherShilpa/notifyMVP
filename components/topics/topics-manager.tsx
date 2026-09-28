@@ -160,10 +160,15 @@ export function TopicsManager({ projects, topics }: TopicsManagerProps) {
 
                   {/* Send target info */}
                   <p className="text-xs text-[var(--muted-foreground)]">
-                    Dashboard send target:{' '}
+                    Send (incl. Rich Push): Notifications → target{' '}
                     <code className="bg-[var(--muted)] px-1 rounded text-[var(--foreground)]">
                       topic:{topic.name}
                     </code>
+                    {' '}+ Image URL — or API{' '}
+                    <code className="bg-[var(--muted)] px-1 rounded text-[var(--foreground)]">
+                      include_topics: [&quot;{topic.name}&quot;]
+                    </code>
+                    {' '}+ <code className="bg-[var(--muted)] px-1 rounded text-[var(--foreground)]">imageUrl</code>
                   </p>
                 </div>
 

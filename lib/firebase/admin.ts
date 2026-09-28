@@ -75,7 +75,10 @@ const DEAD_TOKEN_STATUSES = new Set([
 
 export interface FcmOptionsInput {
   url?: string
+  /** Big-picture / rich notification image (public HTTPS URL). */
   imageUrl?: string
+  /** Optional small/large icon URL (Android largeIcon when supported). */
+  iconUrl?: string
   data?: Record<string, string>
 }
 
@@ -127,7 +130,7 @@ export async function sendMulticastNotification(
   const projectId   = credentials.project_id
 
   const fcmOpts: FcmOptionsInput =
-    options && ('url' in options || 'imageUrl' in options || 'data' in options)
+    options && ('url' in options || 'imageUrl' in options || 'iconUrl' in options || 'data' in options)
       ? (options as FcmOptionsInput)
       : { data: options as Record<string, string> }
 
@@ -165,7 +168,8 @@ function buildNotificationFields(
   options?: FcmOptionsInput
 ): Record<string, unknown> {
   const targetUrl = options?.url || options?.data?.url
-  const imageUrl  = options?.imageUrl || options?.data?.imageUrl
+  const imageUrl  = options?.imageUrl || options?.data?.imageUrl || options?.data?.image
+  const iconUrl   = options?.iconUrl || options?.data?.iconUrl || options?.data?.icon
   const rawData = options?.data || {}
   const combinedData: Record<string, string> = {}
   for (const [k, v] of Object.entries(rawData)) {
@@ -177,8 +181,14 @@ function buildNotificationFields(
     combinedData.url = String(targetUrl)
     combinedData.link = String(targetUrl)
   }
+  // Client SDKs read these for foreground BigPicture / rich banners
   if (imageUrl) {
     combinedData.imageUrl = String(imageUrl)
+    combinedData.image = String(imageUrl)
+  }
+  if (iconUrl) {
+    combinedData.iconUrl = String(iconUrl)
+    combinedData.icon = String(iconUrl)
   }
 
   return {
@@ -197,6 +207,7 @@ function buildNotificationFields(
         default_sound: true,
         default_vibrate_timings: true,
         visibility: 'PUBLIC',
+        // Rich / Big Picture (Play Services downloads when app is background)
         ...(imageUrl && { image: imageUrl }),
       },
     },
@@ -211,6 +222,7 @@ function buildNotificationFields(
         title,
         body,
         ...(imageUrl && { image: imageUrl }),
+        ...(iconUrl && { icon: iconUrl }),
       },
     },
     apns: {
@@ -223,6 +235,7 @@ function buildNotificationFields(
           alert: { title, body },
           sound: 'default',
           badge: 1,
+          // Required for rich image via Notification Service Extension / FCM
           'mutable-content': 1,
         },
       },
@@ -269,7 +282,7 @@ export async function sendToTopic(
   options?:    FcmOptionsInput | Record<string, string>
 ): Promise<{ success: boolean; error?: string }> {
   const fcmOpts: FcmOptionsInput =
-    options && ('url' in options || 'imageUrl' in options || 'data' in options)
+    options && ('url' in options || 'imageUrl' in options || 'iconUrl' in options || 'data' in options)
       ? (options as FcmOptionsInput)
       : { data: options as Record<string, string> | undefined }
   return sendFanout(credentials, { topic: topicName }, title, body, fcmOpts)
