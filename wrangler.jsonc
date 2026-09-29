@@ -7,14 +7,7 @@
     {
       "binding": "DB",
       "database_name": "notifymvp-db",
-      "database_id": "4136aebf-5be0-4e4e-b65b-e21c9887ab55"
-    }
-  ],
-
-  "r2_buckets": [
-    {
-      "binding": "R2",
-      "bucket_name": "firebase-credentials"
+      "database_id": "9e1e6db0-c22f-4dab-b6be-01dfaaa05e1d"
     }
   ],
 
