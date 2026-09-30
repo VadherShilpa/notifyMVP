@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, Suspense } from 'react'
-import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Zap, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -9,8 +8,6 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { signIn } from '@/lib/auth/client'
-import { GoogleSignInButton } from '@/components/auth/google-sign-in-button'
-
 function LoginForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -58,18 +55,9 @@ function LoginForm() {
       <Card>
         <CardHeader className="pb-4">
           <CardTitle>Sign in</CardTitle>
-          <CardDescription>Enter your credentials or use Google to continue</CardDescription>
+          <CardDescription>Enter your email and password to continue</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <GoogleSignInButton />
-
-          <div className="relative flex items-center justify-center">
-            <div className="w-full border-t border-[var(--border)]" />
-            <span className="bg-[var(--card)] px-2 text-xs uppercase text-[var(--muted-foreground)]">
-              Or
-            </span>
-          </div>
-
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-1.5">
               <Label htmlFor="email">Email</Label>
@@ -112,13 +100,6 @@ function LoginForm() {
           </form>
         </CardContent>
       </Card>
-
-      <p className="text-center text-sm text-[var(--muted-foreground)]">
-        Don&apos;t have an account?{' '}
-        <Link href="/register" className="font-medium text-[var(--primary)] hover:underline">
-          Create one
-        </Link>
-      </p>
     </div>
   )
 }

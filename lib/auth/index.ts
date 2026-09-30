@@ -10,7 +10,6 @@
 
 import { betterAuth } from 'better-auth'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
-import { dash } from '@better-auth/infra'
 import { getDb } from '@/lib/db/client'
 import { baUser, baSession, baAccount, baVerification } from '@/lib/db/schema'
 
@@ -31,19 +30,13 @@ export async function getAuth() {
   } catch {}
 
   const secret       = process.env.BETTER_AUTH_SECRET || cfEnv.BETTER_AUTH_SECRET
-  const baseURL      = process.env.BETTER_AUTH_URL || cfEnv.BETTER_AUTH_URL || process.env.NEXT_PUBLIC_APP_URL || cfEnv.NEXT_PUBLIC_APP_URL || 'https://notify.earnslash.com'
-  const clientId     = process.env.GOOGLE_CLIENT_ID || cfEnv.GOOGLE_CLIENT_ID
-  const clientSecret = process.env.GOOGLE_CLIENT_SECRET || cfEnv.GOOGLE_CLIENT_SECRET
-  const dashApiKey   = process.env.BETTER_AUTH_API_KEY || cfEnv.BETTER_AUTH_API_KEY
-
+  const baseURL      = process.env.BETTER_AUTH_URL || cfEnv.BETTER_AUTH_URL || process.env.NEXT_PUBLIC_APP_URL || cfEnv.NEXT_PUBLIC_APP_URL || ''
   if (!secret) throw new Error('BETTER_AUTH_SECRET is not set')
-  if (!clientId || !clientSecret) throw new Error('GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET not set')
 
   _auth = betterAuth({
     secret,
     baseURL,
     trustedOrigins: [
-      'https://notify.earnslash.com',
       'http://localhost:3000',
       baseURL,
     ].filter(Boolean),
@@ -56,22 +49,9 @@ export async function getAuth() {
         verification: baVerification,
       },
     }),
-    socialProviders: {
-      google: {
-        clientId,
-        clientSecret,
-      },
-    },
-    plugins: [
-      dash({
-        apiKey: dashApiKey,
-        activityTracking: {
-          enabled: false,
-        },
-      }),
-    ],
     emailAndPassword: {
       enabled: true,
+      disableSignUp: true,
     },
     session: {
       cookieCache: {

@@ -9,8 +9,6 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { signUp } from '@/lib/auth/client'
-import { GoogleSignInButton } from '@/components/auth/google-sign-in-button'
-
 export default function RegisterPage() {
   const router = useRouter()
   const [email, setEmail] = useState('')
@@ -55,18 +53,9 @@ export default function RegisterPage() {
         <Card>
           <CardHeader className="pb-4">
             <CardTitle>Create account</CardTitle>
-            <CardDescription>Sign up with Google or enter your details</CardDescription>
+            <CardDescription>Enter your email and password</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <GoogleSignInButton />
-
-            <div className="relative flex items-center justify-center">
-              <div className="w-full border-t border-[var(--border)]" />
-              <span className="bg-[var(--card)] px-2 text-xs uppercase text-[var(--muted-foreground)]">
-                Or
-              </span>
-            </div>
-
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-1.5">
                 <Label htmlFor="email">Email</Label>

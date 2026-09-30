@@ -89,7 +89,7 @@ export async function isSuperAdmin(email?: string | null): Promise<boolean> {
     cfEnv.SUPER_ADMIN_EMAILS ||
     process.env.ADMIN_EMAIL ||
     cfEnv.ADMIN_EMAIL ||
-    'contact.earnslash@gmail.com'
+    ''
   )
     .split(',')
     .map((e) => e.trim().toLowerCase())
