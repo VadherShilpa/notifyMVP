@@ -260,6 +260,22 @@ curl -X POST "https://YOUR-WORKER/api/v1/notifications" \
 
 Copy-paste examples: dashboard → **API Keys & Docs** → **Devices & Topics** tab (list + send helpers).
 
+### Rich Push by platform (current)
+
+Server + dashboard send `imageUrl` / `iconUrl` (and optional `data.actions` for buttons). Rich Android payloads use **data-only** + `notifymvp_rich=1` so the client SDK can render Big Picture in the background.
+
+| Platform | SDK | Rich image (Big Picture / attachment) | Action buttons | Docs |
+|---|---|---|---|---|
+| **Flutter** | `notify_mvp` **1.0.3+** | Yes — foreground + background (`notifyMvpFirebaseBackgroundHandler`) | Yes — `data.actions` JSON | [notify_flutter_sdk/README.md](../notify_flutter_sdk/README.md) |
+| **Android (Kotlin)** | JitPack **1.1.2+** | Big Picture + actions — data-only rich in fg/bg via `NotifyMvpMessagingService` | Up to 3 (`data.actions` or `action1_title`) | [notify_android_sdk/README.md](../notify_android_sdk/README.md) |
+| **iOS (Swift)** | `notify-ios-sdk` | **System / FCM** — server sets `apns` + `fcm_options.image`; optional Notification Service Extension | Via payload / app code | [notify_ios_sdk/README.md](../notify_ios_sdk/README.md) |
+| **React Native** | `@notifymvp/react-native-sdk` **1.1.0+** + **Notifee** | Big Picture fg/bg via `notifyMvpFirebaseBackgroundHandler` | Notifee actions when `data.actions` set | [notify_rn_sdk/README.md](../notify_rn_sdk/README.md) |
+| **Web** | FCM `webpush` | Image in `webpush.notification` when rich fields sent | — | REST examples above |
+
+**Recommendation:** **Flutter 1.0.3+**, **Android SDK 1.1.2+**, or **RN 1.1.0+ with Notifee** for full Android rich in all app states. **iOS:** test image attachments on a real device (FCM/APNs).
+
+Deploy the Worker after server changes: `cd my-app && npm run deploy`.
+
 ---
 
 ## Super Admin & User Management
