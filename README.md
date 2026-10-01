@@ -17,7 +17,7 @@ OneSignal-class tools are going paid. For a startup that is still finding users,
 NotifyMVP is a dashboard + device SDK + FCM topic fan-out you host yourself:
 
 - Cloudflare **Workers** (app)
-- Cloudflare **D1** (database & AES-256 encrypted Firebase credentials)
+- Cloudflare **D1** (database + **AES-256 encrypted Firebase credentials** — no R2 required for new installs)
 - **Firebase Cloud Messaging** (delivery)
 
 No vendor lock on the notification SaaS. You already have Cloudflare and Firebase, or you can create both for free.
@@ -44,7 +44,7 @@ npm install
 npx wrangler login
 ```
 
-Then follow **[DEPLOY.md](./DEPLOY.md)** for D1, R2, auth secrets, migrations, and `npm run deploy`.
+Then follow **[DEPLOY.md](./DEPLOY.md)** for D1, auth secrets, migrations, and `npm run deploy` (R2 optional — legacy only).
 
 After deploy:
 
@@ -270,7 +270,7 @@ NotifyMVP comes with a built-in Super Admin panel located at `/dashboard/admin` 
 - **User Directory:** View all registered accounts, their linked auth providers (Google, credential/email from admin), created projects, status, and join dates.
 - **Role Management:** Assign roles (`user`, `admin`, `superadmin`).
 - **Create & Manage Users:** **You can add users here** — create accounts with email/password, reset passwords, and toggle status (`active` vs `suspended`). Use this when you want teammates without sharing `ADMIN_EMAIL` / `ADMIN_PASSWORD`.
-- **Cascading Cleanup on Deletion:** Deleting a user safely and completely purges all their associated projects, registered devices, FCM topics, notification campaigns, delivery logs, and automatically deletes their Firebase Service Account JSON credentials from the Cloudflare R2 bucket.
+- **Cascading Cleanup on Deletion:** Deleting a user safely purges projects, devices, topics, campaigns, logs, and clears credentials from D1 (and legacy R2 objects if any remain).
 
 ### Setting up Super Admin Access
 

@@ -12,14 +12,9 @@
     }
   ],
 
-  "r2_buckets": [
-    {
-      "binding": "R2",
-      "bucket_name": "firebase-credentials"
-    }
-  ],
+  // R2 is NOT required for new installs (Firebase JSON → encrypted in D1).
+  // Only add r2_buckets if you upgrade from an older deploy that still has files in R2 — see DEPLOY.md §3.
 
-  // Your Worker origin (no trailing slash). Also set BETTER_AUTH_URL secret to the same value.
   "vars": {
     "NEXT_PUBLIC_APP_URL": "https://notify.yourdomain.com"
   },

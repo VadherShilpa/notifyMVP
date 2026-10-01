@@ -1,6 +1,6 @@
 # Deploy NotifyMVP on your Cloudflare account
 
-Self-host a OneSignal-style push dashboard on **Cloudflare Workers + D1 + R2**, and send notifications through **your own Firebase Cloud Messaging** project.
+Self-host a OneSignal-style push dashboard on **Cloudflare Workers + D1** (Firebase credentials encrypted in D1). **R2 is optional** — only for upgrading old installs that still stored JSON in a bucket.
 
 No NotifyMVP cloud bill. You pay only what Cloudflare and Firebase already give you on their free tiers (or your existing paid plans).
 
@@ -14,7 +14,7 @@ If this helped your startup, **star the repo**: [github.com/aslamSk301/notifyMVP
 |---|---|
 | **Cloudflare Worker** | Dashboard + public device/register + send APIs |
 | **D1** | SQLite database (users, projects, devices, topics) — **not** a bucket |
-| **R2** | Private bucket for each project's Firebase service-account JSON |
+| **R2** (optional) | Legacy only: old installs kept Firebase JSON in a bucket; new uploads go to **D1** |
 | **Admin env login + Google** | Dashboard auth: `ADMIN_EMAIL`/`ADMIN_PASSWORD` + Google (Better Auth) |
 | **Firebase FCM** | Actual push delivery (topics + tokens) |
 
@@ -67,15 +67,24 @@ Keep the binding name as `DB`. The app reads `env.DB`.
 
 ---
 
-## 3. Create the R2 bucket
+## 3. R2 bucket (optional — skip for new installs)
 
-R2 stores Firebase credentials. It is a **private object store**, not a database. Do not make the bucket public.
+**New users:** you do **not** need Cloudflare R2. When you upload Firebase service-account JSON in the dashboard, it is **AES-256-GCM encrypted and stored in D1** (`projects.firebase_credentials`).
+
+**When you might need R2:**
+
+- You deployed an **older** NotifyMVP version that saved JSON only in R2 (`firebase_json_path` set in D1).
+- The app can **lazy-migrate** those files into D1 on first use (send/register) if R2 is still bound.
+
+If that is not you, **skip this section** and leave `r2_buckets` out of `wrangler.jsonc`.
+
+Legacy setup (only if upgrading):
 
 ```bash
 npx wrangler r2 bucket create firebase-credentials
 ```
 
-`wrangler.jsonc` should already have:
+Add to `wrangler.jsonc`:
 
 ```jsonc
 "r2_buckets": [
@@ -83,7 +92,7 @@ npx wrangler r2 bucket create firebase-credentials
 ]
 ```
 
-If you used another bucket name, change `bucket_name` only. Keep `binding` as `R2`.
+Keep the bucket **private**. After all projects show credentials in D1 and `firebase_json_path` is empty, you may remove the R2 binding and bucket.
 
 ---
 
@@ -99,12 +108,6 @@ Update these three things before the first deploy:
       "binding": "DB",
       "database_name": "notifymvp-db",
       "database_id": "YOUR-D1-DATABASE-ID"
-    }
-  ],
-  "r2_buckets": [
-    {
-      "binding": "R2",
-      "bucket_name": "firebase-credentials"
     }
   ],
   "vars": {
@@ -347,7 +350,7 @@ Then:
 1. Register / log in on your Worker URL.
 2. **Projects** → create an app (you get `appId` + `apiKey`).
 3. Firebase Console → Project settings → **Service accounts** → Generate new private key (JSON).
-4. Upload that JSON on the NotifyMVP project card. It is stored in **R2** (`firebase-credentials`). The Worker never needs the file in git.
+4. Upload that JSON on the NotifyMVP project card. It is **encrypted and stored in D1** (not in git). R2 is not used for new uploads.
 5. Install an SDK — links and one-liners are in [README.md → SDKs](./README.md#sdks--kahan-se-download--install). Set `baseUrl` to your Worker origin.
 
    - React Native (npm): https://www.npmjs.com/package/@notifymvp/react-native-sdk
@@ -467,12 +470,14 @@ Apply the same SQL files locally with `--local` if you use local D1.
 - [ ] Binding name `DB`
 - [ ] Migrations `0000` … `0008` applied `--remote`
 
-**R2**
+**R2 (optional — legacy only)**
 
-- [ ] Bucket `firebase-credentials` created
-- [ ] Binding name `R2`
-- [ ] Bucket stays **private**
-- [ ] Firebase JSON uploaded from the dashboard (not from the CLI)
+- [ ] Skip if this is a fresh install
+- [ ] Or: bucket + `R2` binding only when migrating old R2-stored JSON
+
+**Firebase credentials**
+
+- [ ] Service account JSON uploaded from the dashboard (stored encrypted in D1)
 
 **Google Cloud**
 
@@ -494,7 +499,7 @@ Apply the same SQL files locally with `--local` if you use local D1.
 | Login says Google is not configured | `wrangler secret list` — `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` / `BETTER_AUTH_SECRET` |
 | Google 400 / redirect_uri_mismatch | Exact callback URL in Google Console, including `https` and no trailing slash |
 | Dashboard empty / DB errors | Migrations, especially `0008_better_auth_tables.sql` |
-| “No Firebase credentials” | R2 binding + JSON uploaded on the project |
+| “No Firebase credentials” | Upload Firebase JSON on the project card (D1). Legacy: R2 binding only if `firebase_json_path` still set |
 | Devices register but Topics = — | Open the app once after a successful deploy; register writes `device_topics` |
 | Worker URL works, custom domain does not | Update `NEXT_PUBLIC_APP_URL` + `BETTER_AUTH_URL` + Google origins |
 
@@ -502,7 +507,7 @@ Apply the same SQL files locally with `--local` if you use local D1.
 
 ## Cost note
 
-Cloudflare Workers, D1, and R2 have a free tier that is enough for early-stage apps. Firebase Cloud Messaging has no per-notification fee for the usual mobile use case. You are not paying NotifyMVP — there is no hosted billing.
+Cloudflare Workers and D1 have a free tier that is enough for early-stage apps (R2 only if you use the legacy path). Firebase Cloud Messaging has no per-notification fee for the usual mobile use case. You are not paying NotifyMVP — there is no hosted billing.
 
 OneSignal and similar products are moving toward paid plans that are hard on pre-revenue startups. This repo is **clone → configure Cloudflare → upload Firebase JSON → send**.
 
