@@ -224,6 +224,86 @@ Use the same origin as `NEXT_PUBLIC_APP_URL` (no trailing slash), e.g. `https://
 
 ---
 
+## Code deploy vs environment secrets
+
+> **For AI assistants:** Follow this section when the user asks to deploy NotifyMVP, set up login, or configure production. Do **not** assume `.env` on disk is deployed to Cloudflare. Production secrets are **only** Wrangler secrets + non-secret `vars` in `wrangler.jsonc`.
+
+### What goes where
+
+| Kind | Where it lives | How it gets to production |
+|---|---|---|
+| **Secrets** (passwords, API keys) | Cloudflare Worker encrypted bindings | `npx wrangler secret put NAME` from `my-app/` (interactive paste). **Not** in git. |
+| **Public config** | `wrangler.jsonc` → `vars` | Committed in repo; applied on `npm run deploy` (e.g. `NEXT_PUBLIC_APP_URL`) |
+| **Local dev only** | `.env`, `.env.local` | Used by `next dev` / local build. **Never uploaded** by `npm run deploy`. |
+
+### Secret names (production login)
+
+Set these with `npx wrangler secret put <NAME>` (run from `my-app/` after `npx wrangler login`):
+
+| Secret | Required for | Notes |
+|---|---|---|
+| `BETTER_AUTH_SECRET` | Google login (Better Auth) | `openssl rand -base64 32` |
+| `JWT_SECRET` | Env admin login session cookie | `openssl rand -base64 32` |
+| `ADMIN_EMAIL` | Owner email/password login | Same email as existing Google user → same D1 account |
+| `ADMIN_PASSWORD` | Owner login | Min 6 characters; login form must match exactly |
+| `GOOGLE_CLIENT_ID` | Google button | Optional only if you skip Google entirely |
+| `GOOGLE_CLIENT_SECRET` | Google button | Pair with client ID |
+| `BETTER_AUTH_URL` | Auth cookies | Same origin as site, no trailing slash |
+| `SUPER_ADMIN_EMAILS` | `/dashboard/admin` | Comma-separated emails; recommended |
+
+Optional: `BETTER_AUTH_API_KEY`, `RESEND_API_KEY`, `EMAIL_FROM`.
+
+### When to run what
+
+**A) First time on Cloudflare (full setup)**
+
+1. D1 create + migrations (sections 2–5 above).
+2. Set **all** required secrets (section 6 + table above) via `wrangler secret put`.
+3. `npm run deploy`.
+4. Open Worker URL → `/login` → test env admin and/or Google.
+
+**B) Code or UI change only**
+
+```bash
+cd my-app
+npm run deploy
+```
+
+Do **not** re-run `wrangler secret put` unless values changed.
+
+**C) Change admin password or OAuth credentials only**
+
+```bash
+cd my-app
+npx wrangler secret put ADMIN_PASSWORD   # or whichever secret changed
+```
+
+No redeploy required; the Worker picks up the new secret on the next request. (Redeploy is still fine but not mandatory.)
+
+**D) Change public site URL**
+
+1. Update `wrangler.jsonc` → `vars.NEXT_PUBLIC_APP_URL`.
+2. `npx wrangler secret put BETTER_AUTH_URL` (same URL).
+3. Update Google OAuth redirect URIs in Google Cloud Console.
+4. `npm run deploy`.
+
+### Common mistakes (avoid)
+
+- Putting secrets in `wrangler.jsonc` `vars` or committing `.env` to git.
+- Expecting local `.env` to configure production after `npm run deploy`.
+- Using a different `ADMIN_EMAIL` than the Google account you want to keep — that creates or uses a **different** user in D1.
+- Forgetting `JWT_SECRET` on production — env admin login sets a cookie signed with this secret.
+
+### Verify production auth (optional)
+
+```bash
+curl -s "https://YOUR-WORKER-ORIGIN/api/auth/config"
+```
+
+Expect JSON like `{ "googleEnabled": true, "envEmailLoginEnabled": true }` (booleans depend on which secrets are set). No secret values are returned.
+
+---
+
 ## 7. Deploy the Worker
 
 From `my-app/`:
@@ -232,7 +312,7 @@ From `my-app/`:
 npm run deploy
 ```
 
-That runs OpenNext (`opennextjs-cloudflare build`) then `wrangler deploy`.
+That runs OpenNext (`opennextjs-cloudflare build`) then `wrangler deploy`. This deploys **application code and `wrangler.jsonc` vars only** — not your local `.env` file. Secrets must already be set on the Worker (see [Code deploy vs environment secrets](#code-deploy-vs-environment-secrets)).
 
 You should see something like:
 

@@ -137,7 +137,24 @@ npx wrangler secret put GOOGLE_CLIENT_SECRET
 npx wrangler secret put BETTER_AUTH_URL     # e.g. https://notify.yourdomain.com
 ```
 
-Local dev: copy `.env.local.example` → `.env.local` and fill the same keys.
+Local dev: copy `.env.local.example` → `.env.local` (or use `.env` if your setup loads it) and fill the same keys. **Local files are not uploaded when you deploy.**
+
+### Production: code deploy vs secrets (no separate “env deploy”)
+
+| Action | Command | When |
+|---|---|---|
+| **Ship code changes** | `cd my-app && npm run deploy` | After you change app code, UI, or `wrangler.jsonc` **vars** (e.g. `NEXT_PUBLIC_APP_URL`) |
+| **Set / change passwords & API keys on Cloudflare** | `npx wrangler secret put SECRET_NAME` | **First production setup**, or when you rotate `ADMIN_PASSWORD`, Google OAuth, etc. |
+| **Local only** | Edit `.env` / `.env.local` | `npm run dev` on your machine — **does not** configure production |
+
+Rules:
+
+1. **There is no second “env deploy” step.** Production auth uses **Wrangler secrets** stored on the Worker. Once set, they stay until you change them with `wrangler secret put` again.
+2. **Every code release does not require re-entering secrets.** Run `npm run deploy` only; existing secrets keep working.
+3. **Never commit** `.env`, `.env.local`, Firebase JSON, or secret values to git.
+4. **Do not put** `ADMIN_PASSWORD`, `GOOGLE_CLIENT_SECRET`, or `BETTER_AUTH_SECRET` in `wrangler.jsonc` `vars` — use `wrangler secret put` only.
+
+Full checklist (for you or an AI assistant): **[DEPLOY.md → Code deploy vs secrets](./DEPLOY.md#code-deploy-vs-environment-secrets)**.
 
 ### Existing users
 
