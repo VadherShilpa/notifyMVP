@@ -6,7 +6,7 @@ Clone it. Deploy it on **your** Cloudflare account. Plug in **your** Firebase pr
 
 If this is useful, **star the repo** — it is the only “pricing page” we have.
 
-[Deploy on Cloudflare](./DEPLOY.md) · [MIT License](./LICENSE) · [LinkedIn](https://www.linkedin.com/in/aslam-shahmadar-editbysk/)
+[GitHub](https://github.com/aslamSk301/notifyMVP) · [Deploy on Cloudflare](./DEPLOY.md) · [MIT License](./LICENSE) · [LinkedIn](https://www.linkedin.com/in/aslam-shahmadar-editbysk/)
 
 ---
 
@@ -38,7 +38,7 @@ No vendor lock on the notification SaaS. You already have Cloudflare and Firebas
 ## Quick start
 
 ```bash
-git clone https://github.com/YOUR-GITHUB-USERNAME/notifyMVP.git
+git clone https://github.com/aslamSk301/notifyMVP.git
 cd notifyMVP/my-app
 npm install
 npx wrangler login

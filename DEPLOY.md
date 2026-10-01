@@ -4,7 +4,7 @@ Self-host a OneSignal-style push dashboard on **Cloudflare Workers + D1 + R2**, 
 
 No NotifyMVP cloud bill. You pay only what Cloudflare and Firebase already give you on their free tiers (or your existing paid plans).
 
-If this helped your startup, **star the repo**.
+If this helped your startup, **star the repo**: [github.com/aslamSk301/notifyMVP](https://github.com/aslamSk301/notifyMVP).
 
 ---
 
@@ -35,11 +35,14 @@ Optional: a custom domain on Cloudflare.
 ## 1. Clone and install
 
 ```bash
-git clone https://github.com/YOUR-GITHUB-USERNAME/notifyMVP.git
+git clone https://github.com/aslamSk301/notifyMVP.git
 cd notifyMVP/my-app
+cp wrangler.jsonc.example wrangler.jsonc
 npm install
 npx wrangler login
 ```
+
+Edit `wrangler.jsonc` (this file is **gitignored** — your real `database_id` and URL stay on your machine only). The repo ships `wrangler.jsonc.example` with placeholders for forks.
 
 ---
 
@@ -58,7 +61,7 @@ database_name = "notifymvp-db"
 database_id = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
 ```
 
-Paste that id into `wrangler.jsonc` → `d1_databases[0].database_id`.
+Replace `YOUR-D1-DATABASE-ID` in your local `wrangler.jsonc` → `d1_databases[0].database_id` with **your** id from the command above.
 
 Keep the binding name as `DB`. The app reads `env.DB`.
 

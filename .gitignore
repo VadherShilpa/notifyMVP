@@ -40,6 +40,9 @@ yarn-error.log*
 .wrangler/
 .open-next/
 
+# Real D1 database_id + your domain (use wrangler.jsonc.example as template)
+wrangler.jsonc
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

@@ -3,11 +3,12 @@
   "compatibility_date": "2024-12-18",
   "compatibility_flags": ["nodejs_compat"],
 
+  // After: npx wrangler d1 create notifymvp-db — paste your database_id below.
   "d1_databases": [
     {
       "binding": "DB",
       "database_name": "notifymvp-db",
-      "database_id": "4136aebf-5be0-4e4e-b65b-e21c9887ab55"
+      "database_id": "YOUR-D1-DATABASE-ID"
     }
   ],
 
@@ -18,8 +19,9 @@
     }
   ],
 
+  // Your Worker origin (no trailing slash). Also set BETTER_AUTH_URL secret to the same value.
   "vars": {
-    "NEXT_PUBLIC_APP_URL": "https://notify.earnslash.com"
+    "NEXT_PUBLIC_APP_URL": "https://notify.yourdomain.com"
   },
 
   "main": ".open-next/worker.js",
