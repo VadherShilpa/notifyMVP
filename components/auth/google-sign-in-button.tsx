@@ -9,9 +9,9 @@ export function useGoogleAuthEnabled(): boolean | null {
   const [googleEnabled, setGoogleEnabled] = useState<boolean | null>(null)
 
   useEffect(() => {
-    fetch('/api/auth/config')
-      .then((r) => r.json())
-      .then((data: { googleEnabled?: boolean }) => setGoogleEnabled(Boolean(data.googleEnabled)))
+    void fetch('/api/auth/config')
+      .then((r) => r.json() as Promise<{ googleEnabled?: boolean }>)
+      .then((data) => setGoogleEnabled(Boolean(data.googleEnabled)))
       .catch(() => setGoogleEnabled(false))
   }, [])
 
