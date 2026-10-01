@@ -29,7 +29,7 @@ No vendor lock on the notification SaaS. You already have Cloudflare and Firebas
 - Register Android / iOS / Flutter / React Native devices
 - System FCM topics: all users, OS, country, language, app version (major + exact)
 - Dashboard: send to all, platform, topic, or a single external user id
-- Google + email login for the dashboard
+- **Dashboard sign-in:** env-based admin email/password + Google for other users (see below)
 - **Super Admin Portal (`/dashboard/admin`):** Full multi-tenant user management, role assignments, account suspension, and safe cascading deletion
 - **AES-256-GCM Encrypted Credentials:** Firebase service account JSON is securely encrypted at rest in your D1 database (with zero-downtime fallback migration for legacy R2)
 
@@ -44,11 +44,11 @@ npm install
 npx wrangler login
 ```
 
-Then follow **[DEPLOY.md](./DEPLOY.md)** for D1, R2, Google OAuth, secrets, migrations, and `npm run deploy`.
+Then follow **[DEPLOY.md](./DEPLOY.md)** for D1, R2, auth secrets, migrations, and `npm run deploy`.
 
 After deploy:
 
-1. Log in
+1. Log in (admin env credentials or Google — see **Dashboard sign-in**)
 2. Create a project (copy `appId` + `apiKey`)
 3. Upload the Firebase service-account JSON
 4. Install an SDK from the table below. Set `baseUrl` to **your** Worker URL (`https://notifymvp.<account>.workers.dev` or your custom domain)
@@ -92,7 +92,7 @@ Xcode → File → Add Package Dependencies… → paste URL. Docs: [notify-ios-
 
 ```yaml
 dependencies:
-  notify_mvp: ^1.0.2
+  notify_mvp: ^1.0.3
 ```
 
 ```bash
@@ -110,6 +110,50 @@ npm install @notifymvp/react-native-sdk @react-native-firebase/app @react-native
 ```
 
 Monorepo clone (source, not the store): `notify_android_sdk/`, `notify_ios_sdk/`, `notify_flutter_sdk/`, `notify_rn_sdk/` inside this repo.
+
+---
+
+## Dashboard sign-in
+
+Two paths — simple by design:
+
+| Who | How |
+|---|---|
+| **You (platform owner / admin)** | Set `ADMIN_EMAIL` + `ADMIN_PASSWORD` in env or Wrangler secrets. On `/login`, enter **exactly** those values. No separate “Better Auth signup” for this — the server checks env via `POST /api/auth/env-login`. |
+| **Other dashboard users** | **Continue with Google** on `/login` or `/register` (Better Auth + D1 `ba_user`). |
+
+### Required secrets (summary)
+
+```bash
+# Always
+npx wrangler secret put BETTER_AUTH_SECRET
+npx wrangler secret put JWT_SECRET          # signs the admin session cookie
+npx wrangler secret put ADMIN_EMAIL
+npx wrangler secret put ADMIN_PASSWORD      # min 6 characters
+
+# For Google login (recommended for your team)
+npx wrangler secret put GOOGLE_CLIENT_ID
+npx wrangler secret put GOOGLE_CLIENT_SECRET
+npx wrangler secret put BETTER_AUTH_URL     # e.g. https://notify.yourdomain.com
+```
+
+Local dev: copy `.env.local.example` → `.env.local` and fill the same keys.
+
+### Existing users
+
+- **Google accounts already in D1** are not removed or migrated away. They keep signing in with Google.
+- If your `ADMIN_EMAIL` is the **same** address as an existing Google user, env login attaches to that user’s `ba_user` row (same `userId` → same projects).
+- Sessions last about **7 days** of inactivity; sign in again when the cookie expires. Accounts and projects stay in D1.
+
+### Adding more dashboard users
+
+You do **not** need public email/password registration for everyone:
+
+1. **Google (easiest):** Share your Worker URL → users open **Register** or **Login** → **Continue with Google**.
+2. **Super Admin panel:** After you have super-admin access, go to **`/dashboard/admin`** → create users with email + password, assign roles, suspend, or delete. That is the right place to **add** teammates who should not use env admin credentials.
+3. **More env admins:** The login form only accepts the single `ADMIN_EMAIL` / `ADMIN_PASSWORD` pair. For additional fixed admins, use the admin panel or Google — or change env to another owner email (existing Google users are unaffected).
+
+Details and OAuth redirect URLs: **[DEPLOY.md § Authentication](./DEPLOY.md#6-authentication--what-to-put-where)**.
 
 ---
 
@@ -206,9 +250,9 @@ Copy-paste examples: dashboard → **API Keys & Docs** → **Devices & Topics** 
 NotifyMVP comes with a built-in Super Admin panel located at `/dashboard/admin` for platform owners and administrators.
 
 ### Features
-- **User Directory:** View all registered accounts, their linked auth providers (Google, Email), created projects, status, and join dates.
+- **User Directory:** View all registered accounts, their linked auth providers (Google, credential/email from admin), created projects, status, and join dates.
 - **Role Management:** Assign roles (`user`, `admin`, `superadmin`).
-- **Create & Manage Users:** Create accounts directly with email/password, reset passwords, and toggle user status (`active` vs `suspended`).
+- **Create & Manage Users:** **You can add users here** — create accounts with email/password, reset passwords, and toggle status (`active` vs `suspended`). Use this when you want teammates without sharing `ADMIN_EMAIL` / `ADMIN_PASSWORD`.
 - **Cascading Cleanup on Deletion:** Deleting a user safely and completely purges all their associated projects, registered devices, FCM topics, notification campaigns, delivery logs, and automatically deletes their Firebase Service Account JSON credentials from the Cloudflare R2 bucket.
 
 ### Setting up Super Admin Access

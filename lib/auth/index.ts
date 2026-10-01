@@ -13,7 +13,6 @@ import { drizzleAdapter } from 'better-auth/adapters/drizzle'
 import { dash } from '@better-auth/infra'
 import { getDb } from '@/lib/db/client'
 import { baUser, baSession, baAccount, baVerification } from '@/lib/db/schema'
-
 // ── Auth instance (lazy singleton) ───────────────────────────────────────────
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let _auth: any = null
@@ -37,7 +36,8 @@ export async function getAuth() {
   const dashApiKey   = process.env.BETTER_AUTH_API_KEY || cfEnv.BETTER_AUTH_API_KEY
 
   if (!secret) throw new Error('BETTER_AUTH_SECRET is not set')
-  if (!clientId || !clientSecret) throw new Error('GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET not set')
+
+  const googleEnabled = Boolean(clientId && clientSecret)
 
   _auth = betterAuth({
     secret,
@@ -56,22 +56,28 @@ export async function getAuth() {
         verification: baVerification,
       },
     }),
-    socialProviders: {
-      google: {
-        clientId,
-        clientSecret,
-      },
-    },
-    plugins: [
-      dash({
-        apiKey: dashApiKey,
-        activityTracking: {
-          enabled: false,
-        },
-      }),
-    ],
+    ...(googleEnabled
+      ? {
+          socialProviders: {
+            google: {
+              clientId: clientId!,
+              clientSecret: clientSecret!,
+            },
+          },
+        }
+      : {}),
+    plugins: dashApiKey
+      ? [
+          dash({
+            apiKey: dashApiKey,
+            activityTracking: {
+              enabled: false,
+            },
+          }),
+        ]
+      : [],
     emailAndPassword: {
-      enabled: true,
+      enabled: false,
     },
     session: {
       cookieCache: {

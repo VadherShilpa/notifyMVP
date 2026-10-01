@@ -1,50 +1,14 @@
 'use client'
 
-import { useState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
-import { Zap, Loader2 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
+import { Zap } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { signUp } from '@/lib/auth/client'
 import { GoogleSignInButton } from '@/components/auth/google-sign-in-button'
 
 export default function RegisterPage() {
-  const router = useRouter()
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [isPending, setIsPending] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsPending(true)
-    setError(null)
-
-    await signUp.email({
-      email,
-      password,
-      name: email.split('@')[0], // better-auth requires a name
-      fetchOptions: {
-        onResponse: (ctx) => {
-          if (ctx.response.status === 200) {
-            router.push('/dashboard')
-          }
-        },
-        onError: (ctx) => {
-          setError(ctx.error.message || 'An error occurred')
-          setIsPending(false)
-        },
-      }
-    })
-  }
-
   return (
     <div className="flex min-h-screen items-center justify-center bg-[var(--background)] p-4">
       <div className="w-full max-w-sm space-y-6">
-        {/* Logo */}
         <div className="flex flex-col items-center gap-2">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--primary)]">
             <Zap className="h-5 w-5 text-white" />
@@ -55,60 +19,13 @@ export default function RegisterPage() {
         <Card>
           <CardHeader className="pb-4">
             <CardTitle>Create account</CardTitle>
-            <CardDescription>Sign up with Google or enter your details</CardDescription>
+            <CardDescription>
+              New accounts use Google sign-in. Admin can use email and password on the sign-in page
+              (configured in server env).
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <GoogleSignInButton />
-
-            <div className="relative flex items-center justify-center">
-              <div className="w-full border-t border-[var(--border)]" />
-              <span className="bg-[var(--card)] px-2 text-xs uppercase text-[var(--muted-foreground)]">
-                Or
-              </span>
-            </div>
-
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-1.5">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  name="email"
-                  type="email"
-                  placeholder="you@example.com"
-                  autoComplete="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <Label htmlFor="password">Password</Label>
-                <Input
-                  id="password"
-                  name="password"
-                  type="password"
-                  placeholder="••••••••"
-                  autoComplete="new-password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  minLength={8}
-                />
-                <p className="text-xs text-[var(--muted-foreground)]">Minimum 8 characters</p>
-              </div>
-
-              {error && (
-                <p className="rounded-md bg-[var(--destructive)]/10 px-3 py-2 text-sm text-[var(--destructive)]">
-                  {error}
-                </p>
-              )}
-
-              <Button type="submit" className="w-full" disabled={isPending}>
-                {isPending && <Loader2 className="h-4 w-4 animate-spin" />}
-                Create account
-              </Button>
-            </form>
           </CardContent>
         </Card>
 

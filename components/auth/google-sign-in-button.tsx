@@ -1,12 +1,42 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Loader2 } from 'lucide-react'
 import { signIn } from '@/lib/auth/client'
 
+export function useGoogleAuthEnabled(): boolean | null {
+  const [googleEnabled, setGoogleEnabled] = useState<boolean | null>(null)
+
+  useEffect(() => {
+    fetch('/api/auth/config')
+      .then((r) => r.json())
+      .then((data: { googleEnabled?: boolean }) => setGoogleEnabled(Boolean(data.googleEnabled)))
+      .catch(() => setGoogleEnabled(false))
+  }, [])
+
+  return googleEnabled
+}
+
+export function AuthMethodDivider() {
+  const googleEnabled = useGoogleAuthEnabled()
+  if (!googleEnabled) return null
+  return (
+    <div className="relative flex items-center justify-center">
+      <div className="w-full border-t border-[var(--border)]" />
+      <span className="bg-[var(--card)] px-2 text-xs uppercase text-[var(--muted-foreground)]">
+        Or
+      </span>
+    </div>
+  )
+}
+
 export function GoogleSignInButton() {
+  const googleEnabled = useGoogleAuthEnabled()
   const [loading, setLoading] = useState(false)
+
+  if (googleEnabled === false) return null
+  if (googleEnabled === null) return null
 
   async function handleGoogleSignIn() {
     setLoading(true)

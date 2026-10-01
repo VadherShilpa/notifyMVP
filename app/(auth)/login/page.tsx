@@ -8,8 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { signIn } from '@/lib/auth/client'
-import { GoogleSignInButton } from '@/components/auth/google-sign-in-button'
+import { AuthMethodDivider, GoogleSignInButton } from '@/components/auth/google-sign-in-button'
 
 function LoginForm() {
   const router = useRouter()
@@ -26,21 +25,24 @@ function LoginForm() {
     setIsPending(true)
     setError(null)
 
-    await signIn.email({
-      email,
-      password,
-      fetchOptions: {
-        onResponse: (ctx) => {
-          if (ctx.response.status === 200) {
-            router.push('/dashboard')
-          }
-        },
-        onError: (ctx) => {
-          setError(ctx.error.message || 'An error occurred')
-          setIsPending(false)
-        },
+    try {
+      const res = await fetch('/api/auth/env-login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      })
+      const data = (await res.json().catch(() => ({}))) as { error?: string }
+      if (!res.ok) {
+        setError(data.error || 'Invalid email or password')
+        setIsPending(false)
+        return
       }
-    })
+      router.push('/dashboard')
+      router.refresh()
+    } catch {
+      setError('Could not sign in. Try again.')
+      setIsPending(false)
+    }
   }
 
   const errorMessage = error
@@ -58,17 +60,13 @@ function LoginForm() {
       <Card>
         <CardHeader className="pb-4">
           <CardTitle>Sign in</CardTitle>
-          <CardDescription>Enter your credentials or use Google to continue</CardDescription>
+          <CardDescription>
+            Admin: use the email and password from server env. Everyone else: continue with Google.
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <GoogleSignInButton />
-
-          <div className="relative flex items-center justify-center">
-            <div className="w-full border-t border-[var(--border)]" />
-            <span className="bg-[var(--card)] px-2 text-xs uppercase text-[var(--muted-foreground)]">
-              Or
-            </span>
-          </div>
+          <AuthMethodDivider />
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-1.5">

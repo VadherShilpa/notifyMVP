@@ -191,6 +191,61 @@ function buildNotificationFields(
     combinedData.icon = String(iconUrl)
   }
 
+  const hasActions = Boolean(
+    combinedData.actions?.trim() ||
+      combinedData.action1_title?.trim() ||
+      combinedData.action2_title?.trim()
+  )
+  const isRich = Boolean(imageUrl || iconUrl || hasActions)
+
+  // Flutter/Android: data-only + notifymvp_rich so SDK shows Big Picture / buttons
+  // (notification+data skips custom rich handler in background).
+  if (isRich) {
+    combinedData.title = title
+    combinedData.body = body
+    combinedData.notifymvp_rich = '1'
+  }
+
+  const androidChannelId = 'notifymvp_heads_up_channel'
+
+  if (isRich) {
+    return {
+      ...(Object.keys(combinedData).length > 0 && { data: combinedData }),
+      android: {
+        priority: 'HIGH',
+      },
+      webpush: {
+        headers: {
+          ...(imageUrl && { image: imageUrl }),
+        },
+        fcm_options: {
+          ...(targetUrl && { link: targetUrl }),
+        },
+        notification: {
+          title,
+          body,
+          ...(imageUrl && { image: imageUrl }),
+          ...(iconUrl && { icon: iconUrl }),
+        },
+      },
+      apns: {
+        headers: {
+          'apns-priority': '10',
+          'apns-push-type': 'alert',
+        },
+        payload: {
+          aps: {
+            alert: { title, body },
+            sound: 'default',
+            badge: 1,
+            'mutable-content': 1,
+          },
+        },
+        ...(imageUrl && { fcm_options: { image: imageUrl } }),
+      },
+    }
+  }
+
   return {
     notification: {
       title,
@@ -202,12 +257,11 @@ function buildNotificationFields(
       priority: 'high',
       notification: {
         sound: 'default',
-        channel_id: 'notifymvp_heads_up_v4',
+        channel_id: androidChannelId,
         notification_priority: 'PRIORITY_MAX',
         default_sound: true,
         default_vibrate_timings: true,
         visibility: 'PUBLIC',
-        // Rich / Big Picture (Play Services downloads when app is background)
         ...(imageUrl && { image: imageUrl }),
       },
     },

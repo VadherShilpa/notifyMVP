@@ -15,7 +15,7 @@ If this helped your startup, **star the repo**.
 | **Cloudflare Worker** | Dashboard + public device/register + send APIs |
 | **D1** | SQLite database (users, projects, devices, topics) — **not** a bucket |
 | **R2** | Private bucket for each project's Firebase service-account JSON |
-| **Google OAuth + email login** | Dashboard authentication (Better Auth + Google) |
+| **Admin env login + Google** | Dashboard auth: `ADMIN_EMAIL`/`ADMIN_PASSWORD` + Google (Better Auth) |
 | **Firebase FCM** | Actual push delivery (topics + tokens) |
 
 ---
@@ -138,14 +138,26 @@ If an `ALTER TABLE ... ADD COLUMN` says the column already exists, that file was
 
 ## 6. Authentication — what to put where
 
-Dashboard login uses:
+Dashboard login uses two paths:
 
-- **Email + password** (Better Auth)
-- **Google Sign-In** (Google OAuth client)
+| Path | Who | What you configure |
+|---|---|---|
+| **Env admin** | Platform owner | `ADMIN_EMAIL` + `ADMIN_PASSWORD` on `/login` (checked by `/api/auth/env-login`; session cookie via `JWT_SECRET`) |
+| **Google** | Other users | Google OAuth + `BETTER_AUTH_SECRET` (Better Auth social sign-in / register) |
 
-Better Auth **requires** a secret and Google client credentials in production.
+Better Auth **requires** `BETTER_AUTH_SECRET` in production. Google credentials are **recommended** so teammates can use **Continue with Google**; without them, only env admin login works.
 
-### 6a. Generate a Better Auth secret
+### 6a. Admin email login (env)
+
+```bash
+npx wrangler secret put ADMIN_EMAIL
+npx wrangler secret put ADMIN_PASSWORD   # minimum 6 characters
+npx wrangler secret put JWT_SECRET       # openssl rand -base64 32
+```
+
+Use the same email/password on the login form. This does not delete existing Google users in D1.
+
+### 6b. Generate a Better Auth secret
 
 ```bash
 openssl rand -base64 32
@@ -159,7 +171,7 @@ npx wrangler secret put BETTER_AUTH_SECRET
 
 Paste the random string when prompted.
 
-### 6b. Google Cloud OAuth
+### 6c. Google Cloud OAuth
 
 1. Open [Google Cloud Console](https://console.cloud.google.com/) → your project (or create one).
 2. **APIs & Services → OAuth consent screen** — External, app name e.g. `NotifyMVP`, your email.
@@ -192,7 +204,7 @@ npx wrangler secret put GOOGLE_CLIENT_ID
 npx wrangler secret put GOOGLE_CLIENT_SECRET
 ```
 
-### 6c. App URL for auth cookies
+### 6d. App URL for auth cookies
 
 ```bash
 npx wrangler secret put BETTER_AUTH_URL
@@ -200,17 +212,15 @@ npx wrangler secret put BETTER_AUTH_URL
 
 Use the same origin as `NEXT_PUBLIC_APP_URL` (no trailing slash), e.g. `https://notify.yourdomain.com`.
 
-### 6d. Optional secrets
+### 6e. Optional secrets
 
 | Secret | Required? | What it is |
 |---|---|---|
+| `SUPER_ADMIN_EMAILS` | Recommended | Comma-separated emails for `/dashboard/admin` |
 | `BETTER_AUTH_API_KEY` | No | Better Auth dashboard plugin (`ba_...`) if you use it |
-| `JWT_SECRET` | Recommended | Signs the legacy Google-login cookie. `openssl rand -base64 32` |
 | `RESEND_API_KEY` / `EMAIL_FROM` | No | Only if you later wire transactional email |
 
-```bash
-npx wrangler secret put JWT_SECRET
-```
+**Adding users:** Super admins can create email/password users in **`/dashboard/admin`** without changing env. See [README — Dashboard sign-in](./README.md#dashboard-sign-in).
 
 ---
 
