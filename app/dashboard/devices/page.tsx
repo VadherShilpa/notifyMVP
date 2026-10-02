@@ -21,18 +21,23 @@ const PAGE_SIZE = 20
 export default async function DevicesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string }>
+  searchParams: Promise<{ page?: string; inactive?: string }>
 }) {
   const sp = await searchParams
   const page = Math.max(parseInt(sp.page || '1', 10) || 1, 1)
+  const showInactive = sp.inactive === '1'
 
   const { devices, error, total, pageSize, totalPages } = await getAllDevices({
     page,
     pageSize: PAGE_SIZE,
+    status: showInactive ? 'inactive' : 'active',
   })
 
   const from = total === 0 ? 0 : (page - 1) * pageSize + 1
   const to = Math.min(page * pageSize, total)
+
+  const pageHref = (p: number) =>
+    `/dashboard/devices?page=${p}${showInactive ? '&inactive=1' : ''}`
 
   return (
     <div className="space-y-6">
@@ -43,9 +48,17 @@ export default async function DevicesPage({
             All registered devices across your projects
           </p>
         </div>
-        <Badge variant="secondary" className="text-sm">
-          {total} device{total !== 1 ? 's' : ''}
-        </Badge>
+        <div className="flex items-center gap-3">
+          <Link
+            href={showInactive ? '/dashboard/devices' : '/dashboard/devices?inactive=1'}
+            className="text-sm text-[var(--muted-foreground)] underline"
+          >
+            {showInactive ? 'Show active' : 'Show inactive'}
+          </Link>
+          <Badge variant="secondary" className="text-sm">
+            {total} {showInactive ? 'inactive' : 'active'} device{total !== 1 ? 's' : ''}
+          </Badge>
+        </div>
       </div>
 
       {error && (
@@ -57,8 +70,12 @@ export default async function DevicesPage({
       {total === 0 ? (
         <EmptyState
           icon={<Smartphone className="h-6 w-6" />}
-          title="No devices registered yet"
-          description="Devices appear here when your mobile app calls the registration API."
+          title={showInactive ? 'No inactive devices' : 'No active devices yet'}
+          description={
+            showInactive
+              ? 'Devices with dead or invalid tokens will appear here.'
+              : 'Devices appear here when your mobile app calls the registrationAPI.'
+          }
         />
       ) : (
         <>
@@ -163,7 +180,7 @@ export default async function DevicesPage({
             <div className="flex items-center gap-2">
               {page > 1 ? (
                 <Button variant="outline" size="sm" asChild>
-                  <Link href={`/dashboard/devices?page=${page - 1}`}>
+                  <Link href={pageHref(page - 1)}>
                     <ChevronLeft className="h-4 w-4" />
                     Previous
                   </Link>
@@ -179,7 +196,7 @@ export default async function DevicesPage({
               </span>
               {page < totalPages ? (
                 <Button variant="outline" size="sm" asChild>
-                  <Link href={`/dashboard/devices?page=${page + 1}`}>
+                  <Link href={pageHref(page + 1)}>
                     Next
                     <ChevronRight className="h-4 w-4" />
                   </Link>

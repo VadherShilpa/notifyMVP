@@ -1,6 +1,6 @@
 'use server'
 
-import { eq, inArray, sql } from 'drizzle-orm'
+import { and, eq, inArray, ne, sql } from 'drizzle-orm'
 import { getDb } from '@/lib/db/client'
 import { projects, devices, deviceTopics, topics } from '@/lib/db/schema'
 import { requireSession } from '@/lib/auth/session'
@@ -27,7 +27,11 @@ export interface DeviceWithTopics {
 
 const PAGE_SIZE = 20
 
-export async function getAllDevices(opts?: { page?: number; pageSize?: number }) {
+export async function getAllDevices(opts?: {
+  page?: number
+  pageSize?: number
+  status?: 'active' | 'inactive'
+}) {
   try {
     const session = await requireSession()
     const db      = await getDb()
@@ -48,10 +52,15 @@ export async function getAllDevices(opts?: { page?: number; pageSize?: number })
     const projectIds = userProjects.map((p) => p.id)
     const projectMap = Object.fromEntries(userProjects.map((p) => [p.id, p.name]))
 
+    // Inactive devices (dead tokens, including Play Console / Test Lab runs) are hidden by default
+    const deviceFilter = opts?.status === 'inactive'
+      ? and(inArray(devices.projectId, projectIds), ne(devices.status, 'active'))
+      : and(inArray(devices.projectId, projectIds), eq(devices.status, 'active'))
+
     const [countRow] = await db
       .select({ total: sql<number>`count(*)` })
       .from(devices)
-      .where(inArray(devices.projectId, projectIds))
+      .where(deviceFilter)
 
     const total = Number(countRow?.total ?? 0)
     const totalPages = total === 0 ? 0 : Math.ceil(total / pageSize)
@@ -59,7 +68,7 @@ export async function getAllDevices(opts?: { page?: number; pageSize?: number })
     const deviceRows = await db
       .select()
       .from(devices)
-      .where(inArray(devices.projectId, projectIds))
+      .where(deviceFilter)
       .orderBy(sql`coalesce(${devices.lastActive}, ${devices.createdAt}) desc`)
       .limit(pageSize)
       .offset(offset)
