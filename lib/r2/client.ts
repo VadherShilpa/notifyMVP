@@ -8,12 +8,14 @@
 
 import { getCloudflareContext } from '@opennextjs/cloudflare'
 
-/** Get the R2 bucket binding from Cloudflare Worker env */
-async function getBucket(): Promise<R2Bucket> {
-  const { env } = await getCloudflareContext({ async: true })
-  const bucket = (env as { R2?: R2Bucket }).R2
-  if (!bucket) throw new Error('R2 bucket binding not found. Check wrangler.jsonc.')
-  return bucket
+/** R2 is optional — new installs store Firebase JSON encrypted in D1 only. */
+async function getBucket(): Promise<R2Bucket | null> {
+  try {
+    const { env } = await getCloudflareContext({ async: true })
+    return (env as { R2?: R2Bucket }).R2 ?? null
+  } catch {
+    return null
+  }
 }
 
 /**
@@ -24,6 +26,9 @@ async function getBucket(): Promise<R2Bucket> {
  */
 export async function uploadToR2(key: string, content: string): Promise<void> {
   const bucket = await getBucket()
+  if (!bucket) {
+    throw new Error('R2 is not configured. Firebase JSON is stored in D1; R2 is only for legacy migrations.')
+  }
   await bucket.put(key, content, {
     httpMetadata: { contentType: 'application/json' },
   })
@@ -35,6 +40,7 @@ export async function uploadToR2(key: string, content: string): Promise<void> {
  */
 export async function downloadFromR2(key: string): Promise<string | null> {
   const bucket = await getBucket()
+  if (!bucket) return null
   const object = await bucket.get(key)
   if (!object) return null
   return object.text()
@@ -46,6 +52,7 @@ export async function downloadFromR2(key: string): Promise<string | null> {
  */
 export async function deleteFromR2(key: string): Promise<void> {
   const bucket = await getBucket()
+  if (!bucket) return
   await bucket.delete(key)
 }
 

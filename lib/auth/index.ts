@@ -12,7 +12,6 @@ import { betterAuth } from 'better-auth'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
 import { getDb } from '@/lib/db/client'
 import { baUser, baSession, baAccount, baVerification } from '@/lib/db/schema'
-
 // ── Auth instance (lazy singleton) ───────────────────────────────────────────
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let _auth: any = null

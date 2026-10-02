@@ -23,21 +23,24 @@ function LoginForm() {
     setIsPending(true)
     setError(null)
 
-    await signIn.email({
-      email,
-      password,
-      fetchOptions: {
-        onResponse: (ctx) => {
-          if (ctx.response.status === 200) {
-            router.push('/dashboard')
-          }
-        },
-        onError: (ctx) => {
-          setError(ctx.error.message || 'An error occurred')
-          setIsPending(false)
-        },
+    try {
+      const res = await fetch('/api/auth/env-login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      })
+      const data = (await res.json().catch(() => ({}))) as { error?: string }
+      if (!res.ok) {
+        setError(data.error || 'Invalid email or password')
+        setIsPending(false)
+        return
       }
-    })
+      router.push('/dashboard')
+      router.refresh()
+    } catch {
+      setError('Could not sign in. Try again.')
+      setIsPending(false)
+    }
   }
 
   const errorMessage = error

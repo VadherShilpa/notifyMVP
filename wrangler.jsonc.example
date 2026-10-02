@@ -1,0 +1,28 @@
+{
+  "name": "notifymvp",
+  "compatibility_date": "2024-12-18",
+  "compatibility_flags": ["nodejs_compat"],
+
+  // After: npx wrangler d1 create notifymvp-db — paste your database_id below.
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "notifymvp-db",
+      "database_id": "YOUR-D1-DATABASE-ID"
+    }
+  ],
+
+  // R2 is NOT required for new installs (Firebase JSON → encrypted in D1).
+  // Only add r2_buckets if you upgrade from an older deploy that still has files in R2 — see DEPLOY.md §3.
+
+  "vars": {
+    "NEXT_PUBLIC_APP_URL": "https://notify.yourdomain.com"
+  },
+
+  "main": ".open-next/worker.js",
+
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  }
+}

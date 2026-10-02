@@ -1,48 +1,13 @@
 'use client'
 
-import { useState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
-import { Zap, Loader2 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
+import { Zap } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { signUp } from '@/lib/auth/client'
 export default function RegisterPage() {
-  const router = useRouter()
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [isPending, setIsPending] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsPending(true)
-    setError(null)
-
-    await signUp.email({
-      email,
-      password,
-      name: email.split('@')[0], // better-auth requires a name
-      fetchOptions: {
-        onResponse: (ctx) => {
-          if (ctx.response.status === 200) {
-            router.push('/dashboard')
-          }
-        },
-        onError: (ctx) => {
-          setError(ctx.error.message || 'An error occurred')
-          setIsPending(false)
-        },
-      }
-    })
-  }
-
   return (
     <div className="flex min-h-screen items-center justify-center bg-[var(--background)] p-4">
       <div className="w-full max-w-sm space-y-6">
-        {/* Logo */}
         <div className="flex flex-col items-center gap-2">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--primary)]">
             <Zap className="h-5 w-5 text-white" />

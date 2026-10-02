@@ -6,7 +6,7 @@ Clone it. Deploy it on **your** Cloudflare account. Plug in **your** Firebase pr
 
 If this is useful, **star the repo** — it is the only “pricing page” we have.
 
-[Deploy on Cloudflare](./DEPLOY.md) · [MIT License](./LICENSE) · [LinkedIn](https://www.linkedin.com/in/aslam-shahmadar-editbysk/)
+[GitHub](https://github.com/aslamSk301/notifyMVP) · [Deploy on Cloudflare](./DEPLOY.md) · [MIT License](./LICENSE) · [LinkedIn](https://www.linkedin.com/in/aslam-shahmadar-editbysk/)
 
 ---
 
@@ -17,7 +17,7 @@ OneSignal-class tools are going paid. For a startup that is still finding users,
 NotifyMVP is a dashboard + device SDK + FCM topic fan-out you host yourself:
 
 - Cloudflare **Workers** (app)
-- Cloudflare **D1** (database & AES-256 encrypted Firebase credentials)
+- Cloudflare **D1** (database + **AES-256 encrypted Firebase credentials** — no R2 required for new installs)
 - **Firebase Cloud Messaging** (delivery)
 
 No vendor lock on the notification SaaS. You already have Cloudflare and Firebase, or you can create both for free.
@@ -29,7 +29,7 @@ No vendor lock on the notification SaaS. You already have Cloudflare and Firebas
 - Register Android / iOS / Flutter / React Native devices
 - System FCM topics: all users, OS, country, language, app version (major + exact)
 - Dashboard: send to all, platform, topic, or a single external user id
-- Google + email login for the dashboard
+- **Dashboard sign-in:** env-based admin email/password + Google for other users (see below)
 - **Super Admin Portal (`/dashboard/admin`):** Full multi-tenant user management, role assignments, account suspension, and safe cascading deletion
 - **AES-256-GCM Encrypted Credentials:** Firebase service account JSON is securely encrypted at rest in your D1 database (with zero-downtime fallback migration for legacy R2)
 
@@ -38,17 +38,17 @@ No vendor lock on the notification SaaS. You already have Cloudflare and Firebas
 ## Quick start
 
 ```bash
-git clone https://github.com/YOUR-GITHUB-USERNAME/notifyMVP.git
+git clone https://github.com/aslamSk301/notifyMVP.git
 cd notifyMVP/my-app
 npm install
 npx wrangler login
 ```
 
-Then follow **[DEPLOY.md](./DEPLOY.md)** for D1, R2, Google OAuth, secrets, migrations, and `npm run deploy`.
+Then follow **[DEPLOY.md](./DEPLOY.md)** for D1, auth secrets, migrations, and `npm run deploy` (R2 optional — legacy only).
 
 After deploy:
 
-1. Log in
+1. Log in (admin env credentials or Google — see **Dashboard sign-in**)
 2. Create a project (copy `appId` + `apiKey`)
 3. Upload the Firebase service-account JSON
 4. Install an SDK from the table below. Set `baseUrl` to **your** Worker URL (`https://notifymvp.<account>.workers.dev` or your custom domain)
@@ -92,7 +92,7 @@ Xcode → File → Add Package Dependencies… → paste URL. Docs: [notify-ios-
 
 ```yaml
 dependencies:
-  notify_mvp: ^1.0.2
+  notify_mvp: ^1.0.3
 ```
 
 ```bash
@@ -110,6 +110,67 @@ npm install @notifymvp/react-native-sdk @react-native-firebase/app @react-native
 ```
 
 Monorepo clone (source, not the store): `notify_android_sdk/`, `notify_ios_sdk/`, `notify_flutter_sdk/`, `notify_rn_sdk/` inside this repo.
+
+---
+
+## Dashboard sign-in
+
+Two paths — simple by design:
+
+| Who | How |
+|---|---|
+| **You (platform owner / admin)** | Set `ADMIN_EMAIL` + `ADMIN_PASSWORD` in env or Wrangler secrets. On `/login`, enter **exactly** those values. No separate “Better Auth signup” for this — the server checks env via `POST /api/auth/env-login`. |
+| **Other dashboard users** | **Continue with Google** on `/login` or `/register` (Better Auth + D1 `ba_user`). |
+
+### Required secrets (summary)
+
+```bash
+# Always
+npx wrangler secret put BETTER_AUTH_SECRET
+npx wrangler secret put JWT_SECRET          # signs the admin session cookie
+npx wrangler secret put ADMIN_EMAIL
+npx wrangler secret put ADMIN_PASSWORD      # min 6 characters
+
+# For Google login (recommended for your team)
+npx wrangler secret put GOOGLE_CLIENT_ID
+npx wrangler secret put GOOGLE_CLIENT_SECRET
+npx wrangler secret put BETTER_AUTH_URL     # e.g. https://notify.yourdomain.com
+```
+
+Local dev: copy `.env.local.example` → `.env.local` (or use `.env` if your setup loads it) and fill the same keys. **Local files are not uploaded when you deploy.**
+
+### Production: code deploy vs secrets (no separate “env deploy”)
+
+| Action | Command | When |
+|---|---|---|
+| **Ship code changes** | `cd my-app && npm run deploy` | After you change app code, UI, or `wrangler.jsonc` **vars** (e.g. `NEXT_PUBLIC_APP_URL`) |
+| **Set / change passwords & API keys on Cloudflare** | `npx wrangler secret put SECRET_NAME` | **First production setup**, or when you rotate `ADMIN_PASSWORD`, Google OAuth, etc. |
+| **Local only** | Edit `.env` / `.env.local` | `npm run dev` on your machine — **does not** configure production |
+
+Rules:
+
+1. **There is no second “env deploy” step.** Production auth uses **Wrangler secrets** stored on the Worker. Once set, they stay until you change them with `wrangler secret put` again.
+2. **Every code release does not require re-entering secrets.** Run `npm run deploy` only; existing secrets keep working.
+3. **Never commit** `.env`, `.env.local`, Firebase JSON, or secret values to git.
+4. **Do not put** `ADMIN_PASSWORD`, `GOOGLE_CLIENT_SECRET`, or `BETTER_AUTH_SECRET` in `wrangler.jsonc` `vars` — use `wrangler secret put` only.
+
+Full checklist (for you or an AI assistant): **[DEPLOY.md → Code deploy vs secrets](./DEPLOY.md#code-deploy-vs-environment-secrets)**.
+
+### Existing users
+
+- **Google accounts already in D1** are not removed or migrated away. They keep signing in with Google.
+- If your `ADMIN_EMAIL` is the **same** address as an existing Google user, env login attaches to that user’s `ba_user` row (same `userId` → same projects).
+- Sessions last about **7 days** of inactivity; sign in again when the cookie expires. Accounts and projects stay in D1.
+
+### Adding more dashboard users
+
+You do **not** need public email/password registration for everyone:
+
+1. **Google (easiest):** Share your Worker URL → users open **Register** or **Login** → **Continue with Google**.
+2. **Super Admin panel:** After you have super-admin access, go to **`/dashboard/admin`** → create users with email + password, assign roles, suspend, or delete. That is the right place to **add** teammates who should not use env admin credentials.
+3. **More env admins:** The login form only accepts the single `ADMIN_EMAIL` / `ADMIN_PASSWORD` pair. For additional fixed admins, use the admin panel or Google — or change env to another owner email (existing Google users are unaffected).
+
+Details and OAuth redirect URLs: **[DEPLOY.md § Authentication](./DEPLOY.md#6-authentication--what-to-put-where)**.
 
 ---
 
@@ -199,6 +260,22 @@ curl -X POST "https://YOUR-WORKER/api/v1/notifications" \
 
 Copy-paste examples: dashboard → **API Keys & Docs** → **Devices & Topics** tab (list + send helpers).
 
+### Rich Push by platform (current)
+
+Server + dashboard send `imageUrl` / `iconUrl` (and optional `data.actions` for buttons). Rich Android payloads use **data-only** + `notifymvp_rich=1` so the client SDK can render Big Picture in the background.
+
+| Platform | SDK | Rich image (Big Picture / attachment) | Action buttons | Docs |
+|---|---|---|---|---|
+| **Flutter** | `notify_mvp` **1.0.3+** | Yes — foreground + background (`notifyMvpFirebaseBackgroundHandler`) | Yes — `data.actions` JSON | [notify_flutter_sdk/README.md](../notify_flutter_sdk/README.md) |
+| **Android (Kotlin)** | JitPack **1.1.2+** | Big Picture + actions — data-only rich in fg/bg via `NotifyMvpMessagingService` | Up to 3 (`data.actions` or `action1_title`) | [notify_android_sdk/README.md](../notify_android_sdk/README.md) |
+| **iOS (Swift)** | `notify-ios-sdk` | **System / FCM** — server sets `apns` + `fcm_options.image`; optional Notification Service Extension | Via payload / app code | [notify_ios_sdk/README.md](../notify_ios_sdk/README.md) |
+| **React Native** | `@notifymvp/react-native-sdk` **1.1.0+** + **Notifee** | Big Picture fg/bg via `notifyMvpFirebaseBackgroundHandler` | Notifee actions when `data.actions` set | [notify_rn_sdk/README.md](../notify_rn_sdk/README.md) |
+| **Web** | FCM `webpush` | Image in `webpush.notification` when rich fields sent | — | REST examples above |
+
+**Recommendation:** **Flutter 1.0.3+**, **Android SDK 1.1.2+**, or **RN 1.1.0+ with Notifee** for full Android rich in all app states. **iOS:** test image attachments on a real device (FCM/APNs).
+
+Deploy the Worker after server changes: `cd my-app && npm run deploy`.
+
 ---
 
 ## Super Admin & User Management
@@ -206,10 +283,10 @@ Copy-paste examples: dashboard → **API Keys & Docs** → **Devices & Topics** 
 NotifyMVP comes with a built-in Super Admin panel located at `/dashboard/admin` for platform owners and administrators.
 
 ### Features
-- **User Directory:** View all registered accounts, their linked auth providers (Google, Email), created projects, status, and join dates.
+- **User Directory:** View all registered accounts, their linked auth providers (Google, credential/email from admin), created projects, status, and join dates.
 - **Role Management:** Assign roles (`user`, `admin`, `superadmin`).
-- **Create & Manage Users:** Create accounts directly with email/password, reset passwords, and toggle user status (`active` vs `suspended`).
-- **Cascading Cleanup on Deletion:** Deleting a user safely and completely purges all their associated projects, registered devices, FCM topics, notification campaigns, delivery logs, and automatically deletes their Firebase Service Account JSON credentials from the Cloudflare R2 bucket.
+- **Create & Manage Users:** **You can add users here** — create accounts with email/password, reset passwords, and toggle status (`active` vs `suspended`). Use this when you want teammates without sharing `ADMIN_EMAIL` / `ADMIN_PASSWORD`.
+- **Cascading Cleanup on Deletion:** Deleting a user safely purges projects, devices, topics, campaigns, logs, and clears credentials from D1 (and legacy R2 objects if any remain).
 
 ### Setting up Super Admin Access
 
